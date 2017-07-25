@@ -101,6 +101,8 @@ namespace Testing
             {
                 command = new Dictionary<string, string>()
             };
+
+            rep.command = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("JSONDico.txt"));
             rep.SetCommandItem("!ping", "!pong");
             rep.SetCommandItem("WESH", "MAGUEULE");
 
@@ -124,6 +126,8 @@ namespace Testing
                 }
             }
             while (!input.Equals("STOP"));
+
+            File.WriteAllText("JSONDico.txt", JsonConvert.SerializeObject(rep.command));
 
             await Task.Delay(-1);
         }

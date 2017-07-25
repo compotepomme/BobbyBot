@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,6 +33,45 @@ namespace BobbyBot
 
         private async Task MessageReceived(SocketMessage message)
         {
+            Reply rep = new Reply()
+            {
+                command = new Dictionary<string, string>()
+            };
+
+            rep.command = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("../../../JSONDico.txt"));
+
+            string input;
+            string[] learn;
+            if (message.Content.StartsWith("!learn "))
+            {
+                learn = message.Content.Split('"');
+                foreach (string l in learn)
+                {
+                    Console.Out.WriteLine(l);
+                }
+                if (!(learn[1] == null || learn[3] == null))
+                {
+                    rep.SetCommandItem(learn[1], learn[3]);
+                    File.WriteAllText("../../../JSONDico.txt", JsonConvert.SerializeObject(rep.command));
+                }
+                else
+                {
+                    await message.Channel.SendMessageAsync("!learn need 2 arguments. \nex : !learn \"Qui est Robin ?\" \"Robin est le plus beau\"");
+                }
+            }
+            else
+            {
+                if (rep.GetReply(message.Content).Equals("ERROR COMMAND UNKNOWN"))
+                {
+                    Console.Out.WriteLine(rep.GetReply(message.Content));
+                }
+                else
+                {
+                    await message.Channel.SendMessageAsync(rep.GetReply(message.Content));
+                }
+            }
+
+            /*
             if (message.Content.StartsWith("!learn "))
             {
                 StringBuilder sb = new StringBuilder();
@@ -87,12 +127,53 @@ namespace BobbyBot
                         break;
                 }
             }
+            */
         }
 
         private Task Log(LogMessage msg)
         {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
+        }
+
+        internal class Reply
+        {
+            public Dictionary<string, string> command;
+
+            public Dictionary<string, string> Command { get => command; set => command = value; }
+
+            public void SetCommandItem(string com, string item)
+            {
+                if (!(command.ContainsKey(com) || command.ContainsKey(com.ToLower()) || command.ContainsKey(com.ToUpper())))
+                {
+                    command.Add(com, item);
+                    Console.Out.WriteLine("Command : " + com + " added with value : " + item);
+                }
+                else
+                {
+                    Console.Out.WriteLine("Command : " + com + " already registered.");
+                }
+            }
+
+            public string GetReply(string com)
+            {
+                if (command.ContainsKey(com))
+                {
+                    return command[com];
+                }
+                else if (command.ContainsKey(com.ToLower()))
+                {
+                    return command[com.ToLower()];
+                }   
+                else if (command.ContainsKey(com.ToUpper()))
+                {
+                    return command[com.ToUpper()];
+                }
+                else
+                {
+                    return "ERROR COMMAND UNKNOWN";
+                }
+            }
         }
     }
 }
