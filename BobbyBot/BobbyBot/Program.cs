@@ -33,58 +33,67 @@ namespace BobbyBot
 
         private async Task MessageReceived(SocketMessage message)
         {
-            string mess = (message.Content.Trim()).ToLower();
-            Reply rep = new Reply("../../../JSONDicoCommand.txt", "../../../JSONDicoWord.txt");
-            System.Threading.Thread.Sleep(1000);
+            if (!message.Author.IsBot)
+            {
+                string mess = message.Content.Trim();
+                Reply rep = new Reply("../../../JSONDicoCommand.txt", "../../../JSONDicoWord.txt");
+                System.Threading.Thread.Sleep(500);
+                string mess_lower = (message.Content.Trim()).ToLower();
 
-            if (mess.StartsWith("bonjour") || mess.StartsWith("salut") || mess.StartsWith("coucou") || mess.StartsWith("hello")
-                 || mess.StartsWith("yo") || mess.StartsWith("plop"))
-            {
-                await message.Channel.SendMessageAsync("Yo " + message.Author + " !");
-            }
-            else if (mess.StartsWith("!learn "))
-            {
-                string[] learn;
-                learn = mess.Split('"');
-                if (learn.Length > 3)
+                if (mess.StartsWith("!learn "))
                 {
-                    //!(learn[1] == null || learn[3] == null)) {
-                    rep.SetCommandItem(learn[1], learn[3]);
-                    rep.SaveCommandToFile("../../../JSONDicoCommand.txt");
+
+                    Console.Out.WriteLine(message.Content);
+                    string[] learn;
+                    learn = mess.Split('"');
+                    Console.Out.WriteLine(learn.Length);
+                    if (learn.Length > 4)
+                    {
+                       //if (!(learn[1] == null || learn[3] == null)) {
+                        string temp = rep.SetCommandItem(learn[1].ToLower(), learn[3]);
+                        Console.Out.WriteLine(temp);
+                        rep.SaveCommandToFile("../../../JSONDicoCommand.txt");
+                    }
+                    else
+                    {
+                        await message.Channel.SendMessageAsync("!learn need 2 arguments. \nex : !learn \"Qui est Robin ?\" \"Robin est le plus beau\"");
+                    }
+                }
+                else if (mess.StartsWith("!word "))
+                {
+                    string[] word;
+                    word = mess.Split('"');
+                    if (word.Length > 3)
+                    {
+                        System.Console.WriteLine("Before Regex : " + word[1]);
+                        Regex.Replace(word[1], @"[^\w\s]", "");
+                        System.Console.WriteLine("After Regex : " + word[1]);
+                        //!(learn[1] == null || learn[3] == null)) {
+                        string temp = rep.SetWordItem(word[1].ToLower(), word[3]);
+                        Console.Out.WriteLine(temp);
+                        rep.SaveWordToFile("../../../JSONDicoWord.txt");
+                    }
+                    else
+                    {
+                        await message.Channel.SendMessageAsync("!word need 2 arguments. \nex : !word \"poivron\" \"Berk ! J'aime pas les poivrons !\"");
+                    }
+                }
+                else if (mess_lower.StartsWith("bonjour") || mess_lower.StartsWith("salut") || mess_lower.StartsWith("coucou") || mess_lower.StartsWith("hello")
+                        || mess_lower.StartsWith("yo") || mess_lower.StartsWith("plop"))
+                {
+                    await message.Channel.SendMessageAsync("Yo " + message.Author.Username + " !");
                 }
                 else
                 {
-                    await message.Channel.SendMessageAsync("!learn need 2 arguments. \nex : !learn \"Qui est Robin ?\" \"Robin est le plus beau\"");
-                }
-            }
-            else if (mess.StartsWith("!word "))
-            {
-                string[] learn;
-                learn = mess.Split('"');
-                if (learn.Length > 3)
-                {
-                    System.Console.WriteLine("Before Regex : " + learn[3]);
-                    Regex.Replace(learn[3], @"[^\w\s]", "");
-                    System.Console.WriteLine("After Regex : " + learn[3]);
-                    //!(learn[1] == null || learn[3] == null)) {
-                    rep.SetWordItem(learn[1], learn[3]);
-                    rep.SaveWordToFile("../../../JSONDicoWord.txt");
-                }
-                else
-                {
-                    await message.Channel.SendMessageAsync("!word need 2 arguments. \nex : !word \"poivron\" \"Berk ! J'aime pas les poivrons !\"");
-                }
-            }
-            else
-            {
-                string reply = rep.GetCommandReply(mess);
-                if (reply.Equals("ERROR COMMAND UNKNOWN"))
-                {
-                    Console.Out.WriteLine(reply);
-                }
-                else
-                {
-                    await message.Channel.SendMessageAsync(reply);
+                    string reply = rep.GetCommandReply(mess_lower);
+                    if (!reply.Equals("ERROR COMMAND UNKNOWN"))
+                    {
+                        await message.Channel.SendMessageAsync(reply);
+                    }
+                    else if (!rep.GetWordReply(mess_lower).Equals("ERROR COMMAND UNKNOWN"))
+                    {
+                        await message.Channel.SendMessageAsync(rep.GetWordReply(mess_lower));
+                    }
                 }
             }
         }
@@ -134,12 +143,13 @@ namespace BobbyBot
                 if (!command.ContainsKey(com))
                 {
                     command.Add(com, item);
-                    ret = "Command : " + com + " added with value : " + item;
+                    ret = "Command : \"" + com + "\" added with value : \"" + item + "\"";
                 }
                 else
                 {
-                    ret = "Command : " + com + " already registered.";
+                    ret = "Command : \"" + com + "\" already registered.";
                 }
+                //Console.Out.WriteLine(ret);
                 return ret;
             }
 
@@ -154,6 +164,7 @@ namespace BobbyBot
                 {
                     ret = "ERROR COMMAND UNKNOWN";
                 }
+                //Console.Out.WriteLine(ret);
                 return ret;
             }
 
@@ -176,18 +187,31 @@ namespace BobbyBot
                 if (!word.ContainsKey(wor))
                 {
                     word.Add(wor, item);
-                    ret = "Command : " + wor + " added with value : " + item;
+                    ret = "Word : \"" + wor + "\" added with value : \"" + item + "\"";
                 }
                 else
                 {
-                    ret = "Command : " + wor + " already registered.";
+                    ret = "Word : \"" + wor + "\" already registered.";
                 }
+                //Console.Out.WriteLine(ret);
                 return ret;
             }
 
             public string GetWordReply(string wor)
             {
-                string ret;
+                string ret = "ERROR COMMAND UNKNOWN";
+                string[] wo;
+                wo = wor.Split(' ');
+                foreach (string w in wo)
+                {
+                    if (word.ContainsKey(w))
+                    {
+                        ret = "";
+                        ret = word[w];
+                        break;
+                    }
+                }
+                /*
                 if (word.ContainsKey(wor))
                 {
                     ret = word[wor];
@@ -196,6 +220,7 @@ namespace BobbyBot
                 {
                     ret = "ERROR COMMAND UNKNOWN";
                 }
+                //Console.Out.WriteLine(ret);*/
                 return ret;
             }
         }
