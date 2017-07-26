@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BobbyBot
@@ -33,101 +33,60 @@ namespace BobbyBot
 
         private async Task MessageReceived(SocketMessage message)
         {
-            Reply rep = new Reply()
-            {
-                command = new Dictionary<string, string>()
-            };
+            string mess = (message.Content.Trim()).ToLower();
+            Reply rep = new Reply("../../../JSONDicoCommand.txt", "../../../JSONDicoWord.txt");
+            System.Threading.Thread.Sleep(1000);
 
-            rep.command = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("../../../JSONDico.txt"));
-
-            string input;
-            string[] learn;
-            if (message.Content.StartsWith("!learn "))
+            if (mess.StartsWith("bonjour") || mess.StartsWith("salut") || mess.StartsWith("coucou") || mess.StartsWith("hello")
+                 || mess.StartsWith("yo") || mess.StartsWith("plop"))
             {
-                learn = message.Content.Split('"');
-                foreach (string l in learn)
+                await message.Channel.SendMessageAsync("Yo " + message.Author + " !");
+            }
+            else if (mess.StartsWith("!learn "))
+            {
+                string[] learn;
+                learn = mess.Split('"');
+                if (learn.Length > 3)
                 {
-                    Console.Out.WriteLine(l);
-                }
-                if (!(learn[1] == null || learn[3] == null))
-                {
+                    //!(learn[1] == null || learn[3] == null)) {
                     rep.SetCommandItem(learn[1], learn[3]);
-                    File.WriteAllText("../../../JSONDico.txt", JsonConvert.SerializeObject(rep.command));
+                    rep.SaveCommandToFile("../../../JSONDicoCommand.txt");
                 }
                 else
                 {
                     await message.Channel.SendMessageAsync("!learn need 2 arguments. \nex : !learn \"Qui est Robin ?\" \"Robin est le plus beau\"");
                 }
             }
-            else
+            else if (mess.StartsWith("!word "))
             {
-                if (rep.GetReply(message.Content).Equals("ERROR COMMAND UNKNOWN"))
+                string[] learn;
+                learn = mess.Split('"');
+                if (learn.Length > 3)
                 {
-                    Console.Out.WriteLine(rep.GetReply(message.Content));
+                    System.Console.WriteLine("Before Regex : " + learn[3]);
+                    Regex.Replace(learn[3], @"[^\w\s]", "");
+                    System.Console.WriteLine("After Regex : " + learn[3]);
+                    //!(learn[1] == null || learn[3] == null)) {
+                    rep.SetWordItem(learn[1], learn[3]);
+                    rep.SaveWordToFile("../../../JSONDicoWord.txt");
                 }
                 else
                 {
-                    await message.Channel.SendMessageAsync(rep.GetReply(message.Content));
-                }
-            }
-
-            /*
-            if (message.Content.StartsWith("!learn "))
-            {
-                StringBuilder sb = new StringBuilder();
-                StringWriter sw = new StringWriter(sb);
-                
-                using(JsonWriter writer = new JsonTextWriter(sw))
-                {
-                    writer.Formatting = Formatting.Indented;
-                    
-                    writer.WriteStartObject();
-                    writer.WritePropertyName("CPU");
-                    writer.WriteValue("Intel");
-                    writer.WritePropertyName("PSU");
-                    writer.WriteValue("500W");
-                    writer.WritePropertyName("Drives");
-                    writer.WriteStartArray();
-                    writer.WriteValue("DVD read/writer");
-                    writer.WriteComment("(broken)");
-                    writer.WriteValue("500 gigabyte hard drive");
-                    writer.WriteValue("200 gigabype hard drive");
-                    writer.WriteEnd();
-                    writer.WriteEndObject();
-
+                    await message.Channel.SendMessageAsync("!word need 2 arguments. \nex : !word \"poivron\" \"Berk ! J'aime pas les poivrons !\"");
                 }
             }
             else
             {
-                switch (message.Content)
+                string reply = rep.GetCommandReply(mess);
+                if (reply.Equals("ERROR COMMAND UNKNOWN"))
                 {
-                    case "!ping":
-                        await message.Channel.SendMessageAsync("Pong !");
-                        break;
-                    case "!pong":
-                        await message.Channel.SendMessageAsync("Pung !");
-                        break;
-                    case "!pung":
-                        await message.Channel.SendMessageAsync("Ta gueule.");
-                        break;
-                    case "!Kevin":
-                        await message.Channel.SendMessageAsync("Rageux !");
-                        break;
-                    case "!Close":
-                        await message.Channel.SendMessageAsync("Sale Tank !");
-                        break;
-                    case "!Norfl":
-                        await message.Channel.SendMessageAsync("Tuto touchpad !");
-                        break;
-                    case "!Compote":
-                        await message.Channel.SendMessageAsync("Beau Gosse !");
-                        break;
-                    case "!Tamere":
-                        await message.Channel.SendMessageAsync("Ton pere !");
-                        break;
+                    Console.Out.WriteLine(reply);
+                }
+                else
+                {
+                    await message.Channel.SendMessageAsync(reply);
                 }
             }
-            */
         }
 
         private Task Log(LogMessage msg)
@@ -138,41 +97,106 @@ namespace BobbyBot
 
         internal class Reply
         {
-            public Dictionary<string, string> command;
+            private Dictionary<string, string> command;
+            private Dictionary<string, string> word;
+            //public Dictionary<string, string> Command { get => command; set => command = value; }
 
-            public Dictionary<string, string> Command { get => command; set => command = value; }
-
-            public void SetCommandItem(string com, string item)
+            public Reply()
             {
-                if (!(command.ContainsKey(com) || command.ContainsKey(com.ToLower()) || command.ContainsKey(com.ToUpper())))
-                {
-                    command.Add(com, item);
-                    Console.Out.WriteLine("Command : " + com + " added with value : " + item);
-                }
-                else
-                {
-                    Console.Out.WriteLine("Command : " + com + " already registered.");
-                }
+                command = new Dictionary<string, string>();
+                word = new Dictionary<string, string>();
+            } 
+
+            public Reply(string filepathCommand, string filepathWord)
+            {
+                command = new Dictionary<string, string>();
+                command = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(filepathCommand));
+
+                word = new Dictionary<string, string>();
+                word = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(filepathWord));
             }
 
-            public string GetReply(string com)
+            // Command Methods
+
+            public void LoadCommandFromFile(string filepath)
             {
-                if (command.ContainsKey(com))
+                command = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(filepath));
+            }
+
+            public void SaveCommandToFile (string filepath)
+            {
+                File.WriteAllText(filepath, JsonConvert.SerializeObject(command));
+            }
+            
+            public string SetCommandItem(string com, string item)
+            {
+                string ret;
+                if (!command.ContainsKey(com))
                 {
-                    return command[com];
-                }
-                else if (command.ContainsKey(com.ToLower()))
-                {
-                    return command[com.ToLower()];
-                }   
-                else if (command.ContainsKey(com.ToUpper()))
-                {
-                    return command[com.ToUpper()];
+                    command.Add(com, item);
+                    ret = "Command : " + com + " added with value : " + item;
                 }
                 else
                 {
-                    return "ERROR COMMAND UNKNOWN";
+                    ret = "Command : " + com + " already registered.";
                 }
+                return ret;
+            }
+
+            public string GetCommandReply(string com)
+            {
+                string ret;
+                if (command.ContainsKey(com))
+                {
+                    ret = command[com];
+                }
+                else
+                {
+                    ret = "ERROR COMMAND UNKNOWN";
+                }
+                return ret;
+            }
+
+            // Word Methods
+
+            public void LoadWordFromFile(string filepath)
+            {
+                word = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(filepath));
+            }
+
+            public void SaveWordToFile(string filepath)
+            {
+                File.WriteAllText(filepath, JsonConvert.SerializeObject(word));
+            }
+
+
+            public string SetWordItem(string wor, string item)
+            {
+                string ret;
+                if (!word.ContainsKey(wor))
+                {
+                    word.Add(wor, item);
+                    ret = "Command : " + wor + " added with value : " + item;
+                }
+                else
+                {
+                    ret = "Command : " + wor + " already registered.";
+                }
+                return ret;
+            }
+
+            public string GetWordReply(string wor)
+            {
+                string ret;
+                if (word.ContainsKey(wor))
+                {
+                    ret = word[wor];
+                }
+                else
+                {
+                    ret = "ERROR COMMAND UNKNOWN";
+                }
+                return ret;
             }
         }
     }

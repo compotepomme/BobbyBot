@@ -24,29 +24,29 @@ namespace Testing
                 string line = sr.ReadToEnd();
                 Console.Out.WriteLine(line);
                 */
-                /*Product product2 = new Product()
-                {
-                    Name = "Apple",
-                    ExpiryDate = new DateTime(2008, 12, 28),
-                    Price = 3,
-                    Sizes = new string[] { "Small", "Medium", "Large" }
-                };
+            /*Product product2 = new Product()
+            {
+                Name = "Apple",
+                ExpiryDate = new DateTime(2008, 12, 28),
+                Price = 3,
+                Sizes = new string[] { "Small", "Medium", "Large" }
+            };
 
-                string output = JsonConvert.SerializeObject(product2);
-                Console.Out.Write("Serialize" + output + "\n");
-                Product deserializedProduct = JsonConvert.DeserializeObject<Product>(output);
-                Console.Out.Write("DeSerialize" + deserializedProduct.Name + "\n");
-                */
-                /*
-                Product deserializedProduct2 = JsonConvert.DeserializeObject<Product>(line);
-                Console.Out.WriteLine(deserializedProduct2.Name);
-                Console.Out.WriteLine(deserializedProduct2.ExpiryDate);
-                Console.Out.WriteLine(deserializedProduct2.Price);
-                foreach (string s in deserializedProduct2.Sizes)
-                {
-                    Console.Out.WriteLine(s);
-                }
-            }*/
+            string output = JsonConvert.SerializeObject(product2);
+            Console.Out.Write("Serialize" + output + "\n");
+            Product deserializedProduct = JsonConvert.DeserializeObject<Product>(output);
+            Console.Out.Write("DeSerialize" + deserializedProduct.Name + "\n");
+            */
+            /*
+            Product deserializedProduct2 = JsonConvert.DeserializeObject<Product>(line);
+            Console.Out.WriteLine(deserializedProduct2.Name);
+            Console.Out.WriteLine(deserializedProduct2.ExpiryDate);
+            Console.Out.WriteLine(deserializedProduct2.Price);
+            foreach (string s in deserializedProduct2.Sizes)
+            {
+                Console.Out.WriteLine(s);
+            }
+        }*/
             /*
             Product product = new Product()
             {
@@ -133,17 +133,6 @@ namespace Testing
         }
     }
 
-    /*
-    private TxtToJSON(string fileName, string s)
-    {
-        using (StreamReader sr = new StreamReader(fileName))
-        {
-            string line = sr.ReadToEnd();
-            Console.Out.WriteLine(line);
-        }
-    }
-    */
-
     internal class Product
     {
         private DateTime expiryDate;
@@ -159,33 +148,39 @@ namespace Testing
     
     internal class Reply
     {
-        public Dictionary<string, string> command;
+        private Dictionary<string, string> command;
 
-        public Dictionary<string, string> Command { get => command; set => command = value; }
+        //private Dictionary<string, string> Command { get => command; set => command = value; }
 
-        public void SetCommandItem (string com, string item)
+        public string SetCommandItem (string com, string item)
         {
-            if(!command.ContainsKey(com))
+            string c = com.ToLower();
+            string ret;
+            if(!command.ContainsKey(c))
             {
-                command.Add(com, item);
-                Console.Out.WriteLine("Command : " + com + " added with value : " + item);
+                command.Add(c, item);
+                ret = "Command : " + com + " added with value : " + item;
             }
             else
             {
-                Console.Out.WriteLine("Command : " + com + " already registered.");
+                ret = "Command : " + com + " already registered.";
             }
+            return ret;
         }
         
         public string GetReply (string com)
         {
-            if (command.ContainsKey(com))
+            string c = com.ToLower();
+            string ret;
+            if (command.ContainsKey(c))
             {
-                return command[com];
+                ret = command[c];
             }
             else
             {
-                return "ERROR COMMAND UNKNOWN";
+                ret = "ERROR COMMAND UNKNOWN";
             }
+            return ret;
         }
     }
 }
